@@ -30,7 +30,7 @@ def image_url_for_date(date):
     if r.status_code != 200:
         raise DownloaderError("Fetching '{}' failed: {}".format(url, r.status_code))
     parser = BeautifulSoup(r.text, 'html.parser')
-    for link in parser.find_all('a'):
+    for link in parser.center.find_all('a'):
         href = link.get('href')
         if is_image(href):
             return urljoin(url, href)
