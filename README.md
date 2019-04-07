@@ -2,7 +2,7 @@ Astronomy Photo of the Day Downloader
 =====================================
 
 This is a quick script I threw together to download Astronomy
-Photos of the Day from NASA.
+Photos of the Day from NASA. I use the images for a screensaver.
 
 See: https://apod.nasa.gov/apod/astropix.html
 
