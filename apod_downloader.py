@@ -24,9 +24,28 @@ def is_image(url):
     return any(url.endswith(extension) for extension in IMAGE_EXTENSIONS)
 
 
-def image_url_for_date(date):
+def _get_requests_session():
+    """
+    Get a requests session with some retry logic set
+
+    This is needed since I've been getting 'connection reset by peer'
+    errors consistently. Possibly some rate limiting?
+    """
+    retry = requests.packages.urllib3.util.retry.Retry(
+        total=3,
+        backoff_factor=10,
+        status_forcelist=[429,]  # just in case they start using this
+    )
+    adapter = requests.adapters.HTTPAdapter(max_retries=retry)
+    sess = requests.Session()
+    sess.mount("https://", adapter)
+    sess.mount("http://", adapter)
+    return sess
+
+
+def image_url_for_date(requests_session, date):
     url = date.strftime(URL_FORMAT)
-    r = requests.get(url)
+    r = requests_session.get(url)
     if r.status_code != 200:
         raise DownloaderError("Fetching '{}' failed: {}".format(url, r.status_code))
     parser = BeautifulSoup(r.text, 'html.parser')
@@ -43,15 +62,15 @@ def date_name(old_name, date):
     return '.'.join((date_str, extension))
 
 
-def download_image_for_date(date, destination_dir):
-    url = image_url_for_date(date)
+def download_image_for_date(requests_session, date, destination_dir):
+    url = image_url_for_date(requests_session, date)
     original_name = urlparse(url).path.split('/')[-1]
     dest_name = date_name(original_name, date)
 
     dest_path = os.path.join(destination_dir, dest_name)
     if os.path.exists(dest_path):
         return  # already downloaded
-    r = requests.get(url)
+    r = requests_session.get(url)
     if r.status_code != 200:
         raise DownloaderError("Could not download '{}': {}".format(url, r.status_code))
     with open(dest_path, 'wb') as f:
@@ -62,12 +81,14 @@ def download_photos(n_days, destination_dir):
     if not os.path.isdir(destination_dir):
         raise ValueError("'{}' is not a valid directory".format(destination_dir))
 
+    requests_session = _get_requests_session()
+
     today = datetime.date.today()
     for i in six.moves.xrange(n_days):
         date = today - datetime.timedelta(days=i)
 
         try:
-            download_image_for_date(date, destination_dir)
+            download_image_for_date(requests_session, date, destination_dir)
         except DownloaderError:
             print("Couldn't get image for {}".format(date), file=sys.stderr)
 
