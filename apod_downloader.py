@@ -1,4 +1,12 @@
 #!/usr/bin/env python
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#     "beautifulsoup4>=4.12.0",
+#     "requests>=2.31.0",
+#     "six>=1.16.0",
+# ]
+# ///
 
 from __future__ import print_function, unicode_literals
 import argparse
@@ -12,7 +20,7 @@ import sys
 
 
 IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif']
-URL_FORMAT = 'https://apod.nasa.gov/apod/ap%y%m%d.html'
+URL_FORMAT = 'http://www.star.ucl.ac.uk/~apod/apod/ap%y%m%d.html'
 LOCAL_DATE_FORMAT = '%Y-%m-%d'
 
 
