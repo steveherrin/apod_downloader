@@ -4,7 +4,7 @@ Astronomy Photo of the Day Downloader
 This is a quick script I threw together to download Astronomy
 Photos of the Day from NASA. I use the images for a screensaver.
 
-See: https://apod.nasa.gov/apod/astropix.html
+See: https://science.nasa.gov/apod/
 
 It should work with both Python 2 and 3.
 
