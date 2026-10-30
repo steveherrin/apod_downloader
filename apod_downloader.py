@@ -25,8 +25,17 @@ APOD_INDEX_URL = 'https://science.nasa.gov/apod/'
 # article slugs vary (/image-article/apod-2026-september-30-...,
 # /image-article/apod/apod-..., /image-article/apod-august-4-2026-...)
 ARTICLE_URL_RE = re.compile(r'/image-article/(?:[^/]+/)*apod-')
-# page titles are consistent: "APOD: 2026 September 30 - ..."
-TITLE_DATE_RE = re.compile(r'APOD:\s*(\d{4})\s+([A-Za-z]+)\s+(\d{1,2})\b')
+# page title date formats to try in order, as (regex, strptime format); the
+# regex groups are joined with '-' before parsing
+TITLE_DATE_FORMATS = [
+    # "APOD: 2026 September 30 - ..."
+    (re.compile(r'APOD:\s*(\d{4})\s+([A-Za-z]+)\s+(\d{1,2})\b'), '%Y-%B-%d'),
+    # "APOD: 29 October 2026 - ..."
+    (re.compile(r'APOD:\s*(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})\b'), '%d-%B-%Y'),
+]
+# elements holding the explanation text, which sits inside the media block
+# but whose links are unrelated to the picture
+CAPTION_SELECTOR = '.hds-caption, .hds-media-caption, figcaption'
 LOCAL_DATE_FORMAT = '%Y-%m-%d'
 
 
@@ -66,16 +75,19 @@ def _get_page(requests_session, url):
 
 
 def _hero_links(parser):
-    """All links inside the page's main media block"""
-    return parser.select('.media-detail-hero__media a[href]')
+    """All links inside the page's main media block, excluding the caption"""
+    captions = parser.select('.media-detail-hero__media ' + CAPTION_SELECTOR)
+    return [link for link in parser.select('.media-detail-hero__media a[href]')
+            if not any(caption in link.parents for caption in captions)]
 
 
 def date_from_article(parser, page_url):
     title = parser.title.get_text() if parser.title else ''
-    match = TITLE_DATE_RE.search(title)
-    if not match:
-        raise DownloaderError("Could not find a date on '{}'".format(page_url))
-    return datetime.datetime.strptime('-'.join(match.groups()), '%Y-%B-%d').date()
+    for regex, date_format in TITLE_DATE_FORMATS:
+        match = regex.search(title)
+        if match:
+            return datetime.datetime.strptime('-'.join(match.groups()), date_format).date()
+    raise DownloaderError("Could not find a date on '{}'".format(page_url))
 
 
 def latest_article_url(requests_session):
